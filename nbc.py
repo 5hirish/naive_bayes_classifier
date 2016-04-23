@@ -3,22 +3,48 @@ Author 			: Shirish Kadam
 Date 			: 13th Feb 2016
 Algorithm 		: Naive Bayes Classifier (Supervised Machine Learning)
 Implementation 	: A basic Spam filtering
-Training Data 	: learn_data.txt
+Training Data 	: learn_data.txt and training_data.cvs
 """
 
 ###################################
 from math import log10
 
+
 ##################################
 
-no_of_records = 6
-no_of_attributes = 6  # Excluding the outcome
-record_data = [[0 for x in range(7)] for x in range(6)]  # Initialize the 2D matrix 6 by 7
+def num_of_records(fp):
+    num_records = 0
+    for record in fp:
+        if not record.startswith("//"):  # Skip the column head
+            num_records += 1
+    return num_records
+
+
+def num_of_attributes(fp):
+    num_attr = 0
+    for record in fp:
+        if record.startswith("//"):
+            record = record.split()
+            for j in xrange(len(record)):
+                num_attr += 1
+    return num_attr
+
+fp = open("training_data.cvs", "r")
+
+num_records = num_of_records(fp)
+fp.seek(0)                                  # File pointer to the beginning
+num_attr_outcome = num_of_attributes(fp)    # Including the outcome
+num_attr = num_attr_outcome - 1             # Excluding the outcome
+
+print "Training Dataset Info:\n"
+print "Total Attributes:", num_attr, "Total Records:", num_records
+
+record_data = [[0 for x in range(num_attr_outcome)] for x in range(num_records)]  # Initialize the 2D matrix 6 by 7
 i = 0
 
+attributes = []
 # Create a 2D Matrix of the training data
-
-fp = open("learn_data.txt", "r")
+fp.seek(0)
 for record in fp:
     if not record.startswith("//"):  # Skip the column head
         record = record.split()
@@ -28,7 +54,13 @@ for record in fp:
             # print i,j,record[j]
             record_data[i][j] = record[j]
         i += 1
+    else:
+        record = record.split()
+        for j in xrange(len(record)):
+            attributes.append(record[j])
 
+
+fp.close()
 # ### print record_data
 
 # The prior probability of each class
@@ -38,10 +70,10 @@ for record in fp:
 records_each_class = [0 for x in range(2)]
 prob_of_each_class = [0 for x in range(2)]
 
-for i in range(6):
-    if record_data[i][6] == "T":
+for i in range(num_attr):
+    if record_data[i][num_attr] == "T":
         records_each_class[0] += 1
-    elif record_data[i][6] == "E":
+    elif record_data[i][num_attr] == "E":
         records_each_class[1] += 1
 
 print records_each_class
@@ -49,7 +81,7 @@ print records_each_class
 """ The prior probability of each class """
 
 for i in range(2):
-    prob_of_each_class[i] = float(records_each_class[i]) / float(no_of_records)
+    prob_of_each_class[i] = float(records_each_class[i]) / float(num_attr)
 
 print prob_of_each_class
 
@@ -58,15 +90,15 @@ print prob_of_each_class
 attr_of_each_class = [0 for x in range(2)]
 val = 0
 
-for i in range(6):
-    for j in range(7):
+for i in range(num_records):
+    for j in range(num_attr_outcome):
 
-        if j != 6:  # To avoid the outcome/class from getting added
+        if j != num_attr:  # To avoid the outcome/class from getting added
             val += int(record_data[i][j])
 
-        if record_data[i][6] == "T":
+        if record_data[i][num_attr] == "T":
             attr_of_each_class[0] += val
-        elif record_data[i][6] == "E":
+        elif record_data[i][num_attr] == "E":
             attr_of_each_class[1] += val
 
         val = 0
@@ -75,26 +107,26 @@ print attr_of_each_class
 
 """ Total number of times an attribute appears in a particular class """
 
-single_attr_within_a_class = [[0 for x in range(6)] for x in range(2)]  # A 2D Matrix of 2 by 7
+single_attr_within_a_class = [[0 for x in range(num_attr)] for x in range(2)]  # A 2D Matrix of 2 by 7
 
-for i in range(6):
+for i in range(num_records):
     for j in range(7):
 
-        if record_data[i][6] == "T" and j < 6:
+        if record_data[i][6] == "T" and j < num_attr:
             single_attr_within_a_class[0][j] += int(record_data[i][j])
-        elif record_data[i][6] == "E" and j < 6:
+        elif record_data[i][6] == "E" and j < num_attr:
             single_attr_within_a_class[1][j] += int(record_data[i][j])
 
 print single_attr_within_a_class
 
 """ The probability of an attribute appearing in a class """
 
-prob_of_attr_within_class = [[0 for x in range(6)] for x in range(2)]
+prob_of_attr_within_class = [[0 for x in range(num_attr)] for x in range(2)]
 
 for i in range(2):
-    for j in range(6):
+    for j in range(num_attr):
         prob_of_attr_within_class[i][j] = float(single_attr_within_a_class[i][j] + 1) / float(
-            attr_of_each_class[i] + no_of_attributes)
+            attr_of_each_class[i] + num_attr)
 print prob_of_attr_within_class
 
 """ A single zero in the data can wipe out the entire information in the data. This is 'Zero Frequency' problem.
@@ -114,23 +146,23 @@ prob_of_class = [0 for x in range(2)]
 print "Enter the record to predict"
 input_data = []
 
-for i in range(6):
-    input_data.append(float(raw_input()))	# input data set
+for i in range(num_attr):
+    input = raw_input(attributes[i]+": ")
+    input_data.append(float(input))
 
 for i in range(2):
     # print "\n"
-    for j in range(6):
-        prob_of_class[i] += (
-            input_data[j] * log10(prob_of_attr_within_class[i][j]))  # Here log 10 to the base is used....
+    for j in range(num_attr):
+        prob_of_class[i] += (input_data[j] * log10(prob_of_attr_within_class[i][j]))  # Here log 10 to the base is used
     # ### print input_data[j]," * log(",prob_of_attr_within_class[i][j],")"
 
-    prob_of_class[i] = log10(prob_of_each_class[i]) + prob_of_class[i]
+    prob_of_class[i] += log10(prob_of_each_class[i])
 # ### print "log(",prob_of_each_class[i],") + " ,prob_of_attr_within_class[i][j]
 
 print "Ans: ", prob_of_class
 print "Max: ", max(prob_of_class)
 
-if (prob_of_class[0] > prob_of_class[1]):
+if prob_of_class[0] > prob_of_class[1]:
     print "Prediction: T"
 else:
     print "Prediction: E"
