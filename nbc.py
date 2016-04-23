@@ -61,6 +61,14 @@ for record in fp:
 
 
 fp.close()
+
+outcome = []
+for i in range(num_attr):
+    outcome.append(record_data[i][num_attr])
+outcome_set = set(outcome)
+num_class = len(outcome_set)
+print "Total Classes:", num_class
+
 # ### print record_data
 
 # The prior probability of each class
@@ -110,11 +118,11 @@ print attr_of_each_class
 single_attr_within_a_class = [[0 for x in range(num_attr)] for x in range(2)]  # A 2D Matrix of 2 by 7
 
 for i in range(num_records):
-    for j in range(7):
+    for j in range(num_attr_outcome):
 
-        if record_data[i][6] == "T" and j < num_attr:
+        if record_data[i][num_attr] == "T" and j < num_attr:
             single_attr_within_a_class[0][j] += int(record_data[i][j])
-        elif record_data[i][6] == "E" and j < num_attr:
+        elif record_data[i][num_attr] == "E" and j < num_attr:
             single_attr_within_a_class[1][j] += int(record_data[i][j])
 
 print single_attr_within_a_class
